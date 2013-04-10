@@ -74,9 +74,7 @@ static int __init i2c_gpio_param_init(void)
 
 static void __exit i2c_gpio_param_exit(void)
 {
-    printk(KERN_INFO "EXIT");
     if(pdev) {
-        printk(KERN_INFO "PUT");
         platform_device_put(pdev);
     }
 }
