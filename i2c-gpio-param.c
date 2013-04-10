@@ -15,28 +15,28 @@ static int sda_od=0;
 static int scl_od=0;
 static int scl_oo=0;
 
-module_param(busid, int, 0);
+module_param(busid, int, S_IRUSR);
 MODULE_PARM_DESC(sda, "I2C bus id");
 
-module_param(sda, int, 0);
+module_param(sda, int, S_IRUSR);
 MODULE_PARM_DESC(sda, "SDA pin");
 
-module_param(scl, int, 0);
+module_param(scl, int, S_IRUSR);
 MODULE_PARM_DESC(scl, "SCL pin");
 
-module_param(udelay, int, 0);
+module_param(udelay, int, S_IRUSR);
 MODULE_PARM_DESC(udelay, "SCL frequency is (500 / udelay) kHz.");
 
-module_param(timeout, int, 0);
+module_param(timeout, int, S_IRUSR);
 MODULE_PARM_DESC(timeout, "Clock stretching timeout in jiffies.");
 
-module_param(sda_od, int, 0);
+module_param(sda_od, int, S_IRUSR);
 MODULE_PARM_DESC(sda_od, "SDA is configured as open drain.");
 
-module_param(scl_od, int, 0);
+module_param(scl_od, int, S_IRUSR);
 MODULE_PARM_DESC(scl_od, "SCL is configured as open drain.");
 
-module_param(scl_oo, int, 0);
+module_param(scl_oo, int, S_IRUSR);
 MODULE_PARM_DESC(scl_oo, "SCL output drivers cannot be turned off (no clock stretching).");
 
 static int __init i2c_gpio_param_init(void)
