@@ -74,9 +74,7 @@ static int __init i2c_gpio_param_init(void)
 
 static void __exit i2c_gpio_param_exit(void)
 {
-    if(pdev) {
-        platform_device_put(pdev);
-    }
+    platform_device_unregister(pdev);
 }
 
 module_init(i2c_gpio_param_init);
