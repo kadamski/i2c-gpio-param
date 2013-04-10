@@ -39,6 +39,17 @@ MODULE_PARM_DESC(scl_od, "SCL is configured as open drain.");
 module_param(scl_oo, int, S_IRUSR);
 MODULE_PARM_DESC(scl_oo, "SCL output drivers cannot be turned off (no clock stretching).");
 
+ssize_t sysfs_add_bus(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+}
+
+ssize_t sysfs_remove_bus(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+}
+
+static DEVICE_ATTR(add_bus, S_IWUSR | S_IRUGO, NULL, sysfs_add_bus);
+static DEVICE_ATTR(remove_bus, S_IWUSR | S_IRUGO, NULL, sysfs_remove_bus);
+
 static int __init i2c_gpio_param_init(void)
 {
 	struct i2c_gpio_platform_data pdata;
@@ -66,6 +77,18 @@ static int __init i2c_gpio_param_init(void)
 	ret = platform_device_add(pdev);
     if(ret) {
         platform_device_put(pdev);
+        return ret;
+    }
+
+    ret = device_create_file(&pdev->dev, &dev_attr_add_bus);
+    if (ret) {
+        platform_device_unregister(pdev);
+        return ret;
+    }
+
+    ret = device_create_file(&pdev->dev, &dev_attr_remove_bus);
+    if (ret) {
+        platform_device_unregister(pdev);
         return ret;
     }
 
