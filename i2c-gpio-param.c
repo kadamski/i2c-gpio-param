@@ -6,23 +6,56 @@
 
 struct platform_device *pdev = NULL;
 
+static int busid=7;
+static int sda=0;
+static int scl=1;
+static int udelay=0;
+static int timeout=0;
+static int sda_od=0;
+static int scl_od=0;
+static int scl_oo=0;
+
+module_param(busid, int, 0);
+MODULE_PARM_DESC(sda, "I2C bus id");
+
+module_param(sda, int, 0);
+MODULE_PARM_DESC(sda, "SDA pin");
+
+module_param(scl, int, 0);
+MODULE_PARM_DESC(scl, "SCL pin");
+
+module_param(udelay, int, 0);
+MODULE_PARM_DESC(udelay, "SCL frequency is (500 / udelay) kHz.");
+
+module_param(timeout, int, 0);
+MODULE_PARM_DESC(timeout, "Clock stretching timeout in jiffies.");
+
+module_param(sda_od, int, 0);
+MODULE_PARM_DESC(sda_od, "SDA is configured as open drain.");
+
+module_param(scl_od, int, 0);
+MODULE_PARM_DESC(scl_od, "SCL is configured as open drain.");
+
+module_param(scl_oo, int, 0);
+MODULE_PARM_DESC(scl_oo, "SCL output drivers cannot be turned off (no clock stretching).");
+
 static int __init i2c_gpio_param_init(void)
 {
 	struct i2c_gpio_platform_data pdata;
 	int ret;
 
-	pdev = platform_device_alloc("i2c-gpio", 5);
+	pdev = platform_device_alloc("i2c-gpio", busid);
 	if (!pdev) {
 		return -ENOMEM;
 	}
 
-	pdata.sda_pin = 0;
-	pdata.scl_pin = 1;
-	pdata.udelay = 0;
-	pdata.timeout = 0;
-	pdata.sda_is_open_drain = 0;
-	pdata.scl_is_open_drain = 0;
-	pdata.scl_is_output_only = 0;
+	pdata.sda_pin = sda;
+	pdata.scl_pin = scl;
+	pdata.udelay = udelay;
+	pdata.timeout = timeout;
+	pdata.sda_is_open_drain = sda_od;
+	pdata.scl_is_open_drain = scl_od;
+	pdata.scl_is_output_only = scl_oo;
 
     ret = platform_device_add_data(pdev, &pdata, sizeof(pdata));
     if(ret) {
