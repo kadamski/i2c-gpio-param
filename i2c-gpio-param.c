@@ -4,7 +4,12 @@
 #include <linux/i2c-gpio.h>
 #include <linux/init.h>
 
-struct platform_device *pdev = NULL;
+#define MAX_BUSES 2
+
+struct platform_device *buses[MAX_BUSES];
+static int n_buses;
+
+static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata);
 
 static int busid=7;
 static int sda=0;
@@ -41,32 +46,65 @@ MODULE_PARM_DESC(scl_oo, "SCL output drivers cannot be turned off (no clock stre
 
 ssize_t sysfs_add_bus(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
+    struct i2c_gpio_platform_data pdata={};
+    unsigned int id, ret, sdaod, sclod, scloo;
+    char *blank;
+
+    blank = strchr(buf, ' ');
+    if (!blank) {
+        dev_err(dev, "%s: Missing parameters\n", "add_bus");
+        return -EINVAL;
+    }
+
+    ret=sscanf(buf, "%u %u %u %u %u %u %u %u", 
+               &id, &pdata.sda_pin, &pdata.scl_pin, &pdata.udelay, &pdata.timeout, 
+               &sdaod, &sclod, &scloo);
+    if(ret<3) {
+        dev_err(dev, "%s: Missing or wrong required parameters (busid, sda, scl).\n", "add_bus");
+        return -EINVAL;
+    }
+    if(ret>5) {
+        pdata.sda_is_open_drain=sdaod;
+    }
+    if(ret>6) {
+        pdata.scl_is_open_drain=sclod;
+    }
+    if(ret>7) {
+        pdata.scl_is_output_only=scloo;
+    }
+    printk(KERN_INFO "id=%u, sda=%u, scl=%u, udelay=%u, timeout=%u, sda_od=%u, scl_od=%u, scl_oo=%u\n", 
+           id, pdata.sda_pin, pdata.scl_pin, pdata.udelay, pdata.timeout, pdata.sda_is_open_drain,
+           pdata.scl_is_open_drain, pdata.scl_is_output_only);
+
+    ret=addbus(id, pdata);
+    if(ret) {
+        return ret;
+    }
+
+    return count;
 }
 
 ssize_t sysfs_remove_bus(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
+    return count;
 }
 
 static DEVICE_ATTR(add_bus, S_IWUSR | S_IRUGO, NULL, sysfs_add_bus);
 static DEVICE_ATTR(remove_bus, S_IWUSR | S_IRUGO, NULL, sysfs_remove_bus);
 
-static int __init i2c_gpio_param_init(void)
+static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata)
 {
-	struct i2c_gpio_platform_data pdata;
-	int ret;
+    int ret;
+    struct platform_device *pdev;
 
-	pdev = platform_device_alloc("i2c-gpio", busid);
-	if (!pdev) {
-		return -ENOMEM;
-	}
+    if(n_buses>=MAX_BUSES) {
+        return -ENOMEM;
+    }
 
-	pdata.sda_pin = sda;
-	pdata.scl_pin = scl;
-	pdata.udelay = udelay;
-	pdata.timeout = timeout;
-	pdata.sda_is_open_drain = sda_od;
-	pdata.scl_is_open_drain = scl_od;
-	pdata.scl_is_output_only = scl_oo;
+    pdev = platform_device_alloc("i2c-gpio", id);
+    if (!pdev) {
+         return -ENOMEM;
+    }
 
     ret = platform_device_add_data(pdev, &pdata, sizeof(pdata));
     if(ret) {
@@ -74,9 +112,8 @@ static int __init i2c_gpio_param_init(void)
         return ret;
     }
 
-	ret = platform_device_add(pdev);
+    ret = platform_device_add(pdev);
     if(ret) {
-        platform_device_put(pdev);
         return ret;
     }
 
@@ -89,15 +126,44 @@ static int __init i2c_gpio_param_init(void)
     ret = device_create_file(&pdev->dev, &dev_attr_remove_bus);
     if (ret) {
         platform_device_unregister(pdev);
+        device_remove_file(&pdev->dev, &dev_attr_add_bus);
         return ret;
     }
 
-	return 0;
+    buses[n_buses++]=pdev;
+
+    return 0;
+}
+
+static int __init i2c_gpio_param_init(void)
+{
+    struct i2c_gpio_platform_data pdata;
+    int ret;
+
+    pdata.sda_pin = sda;
+    pdata.scl_pin = scl;
+    pdata.udelay = udelay;
+    pdata.timeout = timeout;
+    pdata.sda_is_open_drain = sda_od;
+    pdata.scl_is_open_drain = scl_od;
+    pdata.scl_is_output_only = scl_oo;
+
+    ret=addbus(busid, pdata);
+    if(ret) {
+        return ret;
+    }
+
+    return 0;
 }
 
 static void __exit i2c_gpio_param_exit(void)
 {
-    platform_device_unregister(pdev);
+    int i;
+    for(i=0; i<n_buses; i++) {
+        device_remove_file(&buses[i]->dev, &dev_attr_add_bus);
+        device_remove_file(&buses[i]->dev, &dev_attr_remove_bus);
+        platform_device_unregister(buses[i]);
+    }
 }
 
 module_init(i2c_gpio_param_init);
@@ -106,4 +172,4 @@ module_exit(i2c_gpio_param_exit);
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Krzysztof Adamski <k@japko.eu>");
 MODULE_DESCRIPTION("I2C-GPIO Driver");
-MODULE_VERSION("0.1");
+MODULE_VERSION("0.2");
