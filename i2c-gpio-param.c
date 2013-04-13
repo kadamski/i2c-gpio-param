@@ -94,8 +94,8 @@ ssize_t sysfs_remove_bus(struct device *dev, struct device_attribute *attr, cons
     return count;
 }
 
-static DEVICE_ATTR(add_bus, S_IWUSR | S_IRUGO, NULL, sysfs_add_bus);
-static DEVICE_ATTR(remove_bus, S_IWUSR | S_IRUGO, NULL, sysfs_remove_bus);
+static DEVICE_ATTR(add_bus, S_IWUSR, NULL, sysfs_add_bus);
+static DEVICE_ATTR(remove_bus, S_IWUSR, NULL, sysfs_remove_bus);
 
 static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata)
 {
