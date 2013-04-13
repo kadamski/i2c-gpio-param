@@ -6,7 +6,12 @@
 
 #define MAX_BUSES 2
 
-struct platform_device *buses[MAX_BUSES];
+struct bus {
+    int id;
+    struct platform_device *pdev;
+};
+
+struct bus buses[MAX_BUSES];
 static int n_buses;
 
 static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata);
@@ -78,7 +83,7 @@ ssize_t sysfs_add_bus(struct device *dev, struct device_attribute *attr, const c
 
     ret=addbus(id, pdata);
     if(ret) {
-        return ret;
+       return ret;
     }
 
     return count;
@@ -95,10 +100,16 @@ static DEVICE_ATTR(remove_bus, S_IWUSR | S_IRUGO, NULL, sysfs_remove_bus);
 static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata)
 {
     int ret;
+    unsigned int i;
     struct platform_device *pdev;
 
     if(n_buses>=MAX_BUSES) {
         return -ENOMEM;
+    }
+
+    for(i=0; i<n_buses; i++) {
+        if(buses[i].id==id)
+            return -EEXIST;
     }
 
     pdev = platform_device_alloc("i2c-gpio", id);
@@ -130,7 +141,7 @@ static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata)
         return ret;
     }
 
-    buses[n_buses++]=pdev;
+    buses[n_buses++]=(struct bus){.id=id, .pdev=pdev};
 
     return 0;
 }
@@ -160,9 +171,9 @@ static void __exit i2c_gpio_param_exit(void)
 {
     int i;
     for(i=0; i<n_buses; i++) {
-        device_remove_file(&buses[i]->dev, &dev_attr_add_bus);
-        device_remove_file(&buses[i]->dev, &dev_attr_remove_bus);
-        platform_device_unregister(buses[i]);
+        device_remove_file(&buses[i].pdev->dev, &dev_attr_add_bus);
+        device_remove_file(&buses[i].pdev->dev, &dev_attr_remove_bus);
+        platform_device_unregister(buses[i].pdev);
     }
 }
 
