@@ -4,7 +4,7 @@
 #include <linux/i2c-gpio.h>
 #include <linux/init.h>
 
-#define MAX_BUSES 2
+#define MAX_BUSES 8
 
 struct bus {
     int id;
@@ -15,6 +15,7 @@ struct bus busses[MAX_BUSES];
 static int n_busses;
 
 static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata);
+static void removebus(unsigned int i);
 
 static int busid=7;
 static int sda=0;
@@ -91,11 +92,35 @@ ssize_t sysfs_add_bus(struct device *dev, struct device_attribute *attr, const c
 
 ssize_t sysfs_remove_bus(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
-    return count;
+    unsigned int id,i;
+
+    if(sscanf(buf, "%u", &id)<1) {
+        dev_err(dev, "%s: Missing parameter\n", "remove_bus");
+        return -EINVAL;
+    }
+
+    for(i=0; i<n_busses; i++) {
+        if(busses[i].id==id) {
+            removebus(i);
+            if(i+1<n_busses)
+                busses[i]=busses[n_busses-1];
+
+            n_busses--;
+            return count;
+        }
+    }
+
+    return -ENOENT;
 }
 
 static DEVICE_ATTR(add_bus, S_IWUSR, NULL, sysfs_add_bus);
 static DEVICE_ATTR(remove_bus, S_IWUSR, NULL, sysfs_remove_bus);
+
+static void removebus(unsigned int i) {
+    device_remove_file(&busses[i].pdev->dev, &dev_attr_add_bus);
+    device_remove_file(&busses[i].pdev->dev, &dev_attr_remove_bus);
+    platform_device_unregister(busses[i].pdev);
+}
 
 static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata)
 {
@@ -178,9 +203,7 @@ static void __exit i2c_gpio_param_exit(void)
 {
     int i;
     for(i=0; i<n_busses; i++) {
-        device_remove_file(&busses[i].pdev->dev, &dev_attr_add_bus);
-        device_remove_file(&busses[i].pdev->dev, &dev_attr_remove_bus);
-        platform_device_unregister(busses[i].pdev);
+        removebus(i);
     }
 }
 
