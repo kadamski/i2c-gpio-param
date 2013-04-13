@@ -21,7 +21,7 @@ static int scl_od=0;
 static int scl_oo=0;
 
 module_param(busid, int, S_IRUSR);
-MODULE_PARM_DESC(sda, "I2C bus id");
+MODULE_PARM_DESC(busid, "I2C bus id");
 
 module_param(sda, int, S_IRUSR);
 MODULE_PARM_DESC(sda, "SDA pin");
