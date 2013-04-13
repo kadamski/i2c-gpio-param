@@ -11,8 +11,8 @@ struct bus {
     struct platform_device *pdev;
 };
 
-struct bus buses[MAX_BUSES];
-static int n_buses;
+struct bus busses[MAX_BUSES];
+static int n_busses;
 
 static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata);
 
@@ -103,12 +103,12 @@ static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata)
     unsigned int i;
     struct platform_device *pdev;
 
-    if(n_buses>=MAX_BUSES) {
+    if(n_busses>=MAX_BUSES) {
         return -ENOMEM;
     }
 
-    for(i=0; i<n_buses; i++) {
-        if(buses[i].id==id)
+    for(i=0; i<n_busses; i++) {
+        if(busses[i].id==id)
             return -EEXIST;
     }
 
@@ -148,7 +148,7 @@ static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata)
         return ret;
     }
 
-    buses[n_buses++]=(struct bus){.id=id, .pdev=pdev};
+    busses[n_busses++]=(struct bus){.id=id, .pdev=pdev};
 
     return 0;
 }
@@ -177,10 +177,10 @@ static int __init i2c_gpio_param_init(void)
 static void __exit i2c_gpio_param_exit(void)
 {
     int i;
-    for(i=0; i<n_buses; i++) {
-        device_remove_file(&buses[i].pdev->dev, &dev_attr_add_bus);
-        device_remove_file(&buses[i].pdev->dev, &dev_attr_remove_bus);
-        platform_device_unregister(buses[i].pdev);
+    for(i=0; i<n_busses; i++) {
+        device_remove_file(&busses[i].pdev->dev, &dev_attr_add_bus);
+        device_remove_file(&busses[i].pdev->dev, &dev_attr_remove_bus);
+        platform_device_unregister(busses[i].pdev);
     }
 }
 
