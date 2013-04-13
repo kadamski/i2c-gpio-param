@@ -127,7 +127,14 @@ static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata)
     if(ret) {
         return ret;
     }
-
+    // platform_device_add won't return error code if GPIO resources are not avaiable,
+    // for example. A workaround is to check if drvdata is set after this function
+    // as this is the last thing i2c_gpio_probe
+    if(platform_get_drvdata(pdev)==NULL) {
+        printk(KERN_ERR "i2c-gpio-param: Got error when registering the bus.\n");
+        platform_device_unregister(pdev);
+        return -EEXIST;
+    }
     ret = device_create_file(&pdev->dev, &dev_attr_add_bus);
     if (ret) {
         platform_device_unregister(pdev);
