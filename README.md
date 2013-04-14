@@ -12,3 +12,17 @@ It accepts following parameters:
   - `sda_od` (bool) - SDA is configured as open drain
   - `scl_od` (bool) - SCL is configured as open drain
   - `scl_oo` (bool) - SCL output drivers cannot be turned of (no clock stretching)
+
+You can add additional i2c-gpio busses or remove existing ones with sysfs interface:
+
+  - `/sys/class/i2c-gpio/add_bus` accepts following space delimited integer arguments:
+
+      busid ada scl [udelay] [timeout] [sda_od] [scl_od] [scl_oo]
+
+  - `/sys/class/i2c-gpio/remove_bus` accepts one integer argument - busid
+
+Example:
+
+   # echo 5 2 3 > /sys/class/i2c-gpio/add_bus
+
+   # echo 5 > /sys/class/i2c-gpio/remove_bus
