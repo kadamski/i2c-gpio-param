@@ -15,7 +15,7 @@ struct bus {
 struct bus busses[MAX_BUSES];
 static int n_busses;
 
-static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata);
+static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata, int test);
 static void removebus(unsigned int i);
 
 static int busid=7;
@@ -78,7 +78,7 @@ static ssize_t add_bus_store(struct class *class,
            id, pdata.sda_pin, pdata.scl_pin, pdata.udelay, pdata.timeout, pdata.sda_is_open_drain,
            pdata.scl_is_open_drain, pdata.scl_is_output_only);
 
-    ret=addbus(id, pdata);
+    ret=addbus(id, pdata, 1);
     if(ret) {
        return ret;
     }
@@ -129,7 +129,7 @@ static void removebus(unsigned int i) {
     platform_device_unregister(busses[i].pdev);
 }
 
-static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata)
+static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata, int test)
 {
     int ret;
     unsigned int i;
@@ -159,10 +159,13 @@ static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata)
     if(ret) {
         return ret;
     }
-    // platform_device_add won't return error code if GPIO resources are not avaiable,
+    // platform_device_add won't return error code if GPIO resources are not available,
     // for example. A workaround is to check if drvdata is set after this function
-    // as this is the last thing i2c_gpio_probe
-    if(platform_get_drvdata(pdev)==NULL) {
+    // as this is the last thing i2c_gpio_probe.
+    // Unfortunately this won't work when adding bus from init code as the actual
+    // probe will run only after we finish are initialization.
+
+    if(test && platform_get_drvdata(pdev)==NULL) {
         printk(KERN_ERR MODNAME ": Got error when registering the bus.\n");
         platform_device_unregister(pdev);
         return -EEXIST;
@@ -186,7 +189,7 @@ static int __init i2c_gpio_param_init(void)
     pdata.scl_is_open_drain = scl_od;
     pdata.scl_is_output_only = scl_oo;
 
-    ret=addbus(busid, pdata);
+    ret=addbus(busid, pdata, 0);
     if(ret) {
         return ret;
     }
