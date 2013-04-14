@@ -5,6 +5,7 @@
 #include <linux/init.h>
 
 #define MAX_BUSES 8
+#define MODNAME "i2c-gpio-param"
 
 struct bus {
     int id;
@@ -50,7 +51,9 @@ MODULE_PARM_DESC(scl_od, "SCL is configured as open drain.");
 module_param(scl_oo, int, S_IRUSR);
 MODULE_PARM_DESC(scl_oo, "SCL output drivers cannot be turned off (no clock stretching).");
 
-ssize_t sysfs_add_bus(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t add_bus_store(struct class *class,
+                struct class_attribute *attr,
+                const char *buf, size_t count)
 {
     struct i2c_gpio_platform_data pdata={};
     unsigned int id, ret, sdaod, sclod, scloo;
@@ -58,7 +61,7 @@ ssize_t sysfs_add_bus(struct device *dev, struct device_attribute *attr, const c
 
     blank = strchr(buf, ' ');
     if (!blank) {
-        dev_err(dev, "%s: Missing parameters\n", "add_bus");
+        printk(KERN_INFO MODNAME " add_bus: Missing parameters\n");
         return -EINVAL;
     }
 
@@ -66,7 +69,7 @@ ssize_t sysfs_add_bus(struct device *dev, struct device_attribute *attr, const c
                &id, &pdata.sda_pin, &pdata.scl_pin, &pdata.udelay, &pdata.timeout, 
                &sdaod, &sclod, &scloo);
     if(ret<3) {
-        dev_err(dev, "%s: Missing or wrong required parameters (busid, sda, scl).\n", "add_bus");
+        printk(KERN_INFO MODNAME " add_bus: Missing or wrong required parameters (busid, sda, scl).\n");
         return -EINVAL;
     }
     if(ret>5) {
@@ -90,12 +93,14 @@ ssize_t sysfs_add_bus(struct device *dev, struct device_attribute *attr, const c
     return count;
 }
 
-ssize_t sysfs_remove_bus(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t remove_bus_store(struct class *class,
+                struct class_attribute *attr,
+                const char *buf, size_t count)
 {
     unsigned int id,i;
 
     if(sscanf(buf, "%u", &id)<1) {
-        dev_err(dev, "%s: Missing parameter\n", "remove_bus");
+        printk(KERN_INFO MODNAME " remove_bus: Missing parameter.\n");
         return -EINVAL;
     }
 
@@ -113,12 +118,21 @@ ssize_t sysfs_remove_bus(struct device *dev, struct device_attribute *attr, cons
     return -ENOENT;
 }
 
-static DEVICE_ATTR(add_bus, S_IWUSR, NULL, sysfs_add_bus);
-static DEVICE_ATTR(remove_bus, S_IWUSR, NULL, sysfs_remove_bus);
+
+static struct class_attribute i2c_gpio_param_class_attrs[] = {
+    __ATTR(add_bus, 0200, NULL, add_bus_store),
+    __ATTR(remove_bus, 0200, NULL, remove_bus_store),
+    __ATTR_NULL,
+};
+
+static struct class i2c_gpio_param_class = {
+    .name =     "i2c-gpio",
+    .owner =    THIS_MODULE,
+
+    .class_attrs =  i2c_gpio_param_class_attrs,
+};
 
 static void removebus(unsigned int i) {
-    device_remove_file(&busses[i].pdev->dev, &dev_attr_add_bus);
-    device_remove_file(&busses[i].pdev->dev, &dev_attr_remove_bus);
     platform_device_unregister(busses[i].pdev);
 }
 
@@ -156,21 +170,9 @@ static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata)
     // for example. A workaround is to check if drvdata is set after this function
     // as this is the last thing i2c_gpio_probe
     if(platform_get_drvdata(pdev)==NULL) {
-        printk(KERN_ERR "i2c-gpio-param: Got error when registering the bus.\n");
+        printk(KERN_ERR MODNAME ": Got error when registering the bus.\n");
         platform_device_unregister(pdev);
         return -EEXIST;
-    }
-    ret = device_create_file(&pdev->dev, &dev_attr_add_bus);
-    if (ret) {
-        platform_device_unregister(pdev);
-        return ret;
-    }
-
-    ret = device_create_file(&pdev->dev, &dev_attr_remove_bus);
-    if (ret) {
-        platform_device_unregister(pdev);
-        device_remove_file(&pdev->dev, &dev_attr_add_bus);
-        return ret;
     }
 
     busses[n_busses++]=(struct bus){.id=id, .pdev=pdev};
@@ -196,12 +198,19 @@ static int __init i2c_gpio_param_init(void)
         return ret;
     }
 
+    ret = class_register(&i2c_gpio_param_class);
+    if (ret < 0)
+        return ret;
+
+
     return 0;
 }
 
 static void __exit i2c_gpio_param_exit(void)
 {
     int i;
+
+    class_unregister(&i2c_gpio_param_class);
     for(i=0; i<n_busses; i++) {
         removebus(i);
     }
@@ -213,4 +222,4 @@ module_exit(i2c_gpio_param_exit);
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Krzysztof Adamski <k@japko.eu>");
 MODULE_DESCRIPTION("I2C-GPIO Driver");
-MODULE_VERSION("0.2");
+MODULE_VERSION("0.3");
