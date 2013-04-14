@@ -57,13 +57,6 @@ static ssize_t add_bus_store(struct class *class,
 {
     struct i2c_gpio_platform_data pdata={};
     unsigned int id, ret, sdaod, sclod, scloo;
-    char *blank;
-
-    blank = strchr(buf, ' ');
-    if (!blank) {
-        printk(KERN_INFO MODNAME " add_bus: Missing parameters\n");
-        return -EINVAL;
-    }
 
     ret=sscanf(buf, "%u %u %u %u %u %u %u %u", 
                &id, &pdata.sda_pin, &pdata.scl_pin, &pdata.udelay, &pdata.timeout, 
