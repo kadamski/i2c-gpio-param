@@ -7,6 +7,8 @@
 #define MAX_BUSES 8
 #define MODNAME "i2c-gpio-param"
 
+int pin_blacklist[]={5,6};
+
 struct bus {
     int id;
     struct platform_device *pdev;
@@ -142,6 +144,15 @@ static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata, int test
     for(i=0; i<n_busses; i++) {
         if(busses[i].id==id)
             return -EEXIST;
+    }
+
+    for(i=0; i<sizeof(pin_blacklist)/sizeof(int); i++) {
+        if (pdata.sda_pin==pin_blacklist[i] || 
+            pdata.scl_pin==pin_blacklist[i]) {
+            printk(KERN_ERR MODNAME ": Requested pin (%d) is blacklisted.\n",
+                   pin_blacklist[i]);
+            return -EINVAL;
+        }
     }
 
     pdev = platform_device_alloc("i2c-gpio", id);
