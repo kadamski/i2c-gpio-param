@@ -1,6 +1,21 @@
 i2c-gpio-param
 ==============
 
+Installation
+------------
+
+1.  Modify KDIR variable in Makefile to point to your kernel sources.
+2.  In case of a crosscompilation, pass ARCH and CROSS_COMPILE options to make command. For example:
+
+   make ARCH=arm CROSS_COMPILE=arm-bcm2708-linux-gnueabi-
+
+3.  Load resulting i2c-gpio-param.ko module.
+
+
+
+Usage
+-----
+
 Linux kernel module for adding GPIO bitbanged I²C host device. 
 
 It accepts following parameters:
