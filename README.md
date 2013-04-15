@@ -1,5 +1,10 @@
 i2c-gpio-param
 ==============
+Linux kernel module for adding GPIO bitbanged I²C host device. It uses i2c-gpio module
+but adds a way to dynamicaly add and remove busses when kernel is load and using sysfs
+interface.
+It is designed for and tested on RaspberyPi but it should work (with possible minor changes like
+pin_blacklist) on any other devices.
 
 Installation
 ------------
@@ -10,8 +15,6 @@ Installation
    make ARCH=arm CROSS_COMPILE=arm-bcm2708-linux-gnueabi-
 
 3.  Load resulting i2c-gpio-param.ko module.
-
-
 
 Usage
 -----
