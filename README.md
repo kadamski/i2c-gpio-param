@@ -9,6 +9,7 @@ pin_blacklist) on any other devices.
 Installation
 ------------
 
+0.  Ensure that you have CONFIG_I2c_GPIO enabled in your kernel.
 1.  Modify KDIR variable in Makefile to point to your kernel sources.
 2.  In case of a crosscompilation, pass ARCH and CROSS_COMPILE options to make command. For example:
 
