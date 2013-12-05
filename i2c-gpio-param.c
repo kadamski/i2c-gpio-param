@@ -4,8 +4,8 @@
 #include <linux/i2c-gpio.h>
 #include <linux/init.h>
 
-#ifndef MAX_BUSES
- #define MAX_BUSES 4
+#ifndef MAX_BUSSES
+ #define MAX_BUSSES 4
 #endif
 #define MODNAME "i2c-gpio-param"
 
@@ -16,7 +16,7 @@ struct bus {
     struct platform_device *pdev;
 };
 
-struct bus busses[MAX_BUSES];
+struct bus busses[MAX_BUSSES];
 static int n_busses;
 
 static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata, int test);
@@ -139,7 +139,7 @@ static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata, int test
     unsigned int i;
     struct platform_device *pdev;
 
-    if(n_busses>=MAX_BUSES) {
+    if(n_busses>=MAX_BUSSES) {
         return -ENOMEM;
     }
 
