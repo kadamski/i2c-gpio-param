@@ -4,7 +4,7 @@
 #include <linux/i2c-gpio.h>
 #include <linux/init.h>
 
-#define MAX_BUSES 8
+#define MAX_BUSES 4
 #define MODNAME "i2c-gpio-param"
 
 int pin_blacklist[]={5,6};
