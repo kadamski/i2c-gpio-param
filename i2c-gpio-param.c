@@ -62,20 +62,22 @@ static ssize_t add_bus_store(struct class *class,
     struct i2c_gpio_platform_data pdata={};
     unsigned int id, ret, sdaod, sclod, scloo;
 
+    printk(KERN_INFO MODNAME " add_bus_store()\n");
+
     ret=sscanf(buf, "%u %u %u %u %u %u %u %u", 
                &id, &pdata.sda_pin, &pdata.scl_pin, &pdata.udelay, &pdata.timeout, 
                &sdaod, &sclod, &scloo);
-    if(ret<3) {
+    if (ret<3) {
         printk(KERN_INFO MODNAME " add_bus: Missing or wrong required parameters (busid, sda, scl).\n");
         return -EINVAL;
     }
-    if(ret>5) {
+    if (ret>5) {
         pdata.sda_is_open_drain=sdaod;
     }
-    if(ret>6) {
+    if (ret>6) {
         pdata.scl_is_open_drain=sclod;
     }
-    if(ret>7) {
+    if (ret>7) {
         pdata.scl_is_output_only=scloo;
     }
     printk(KERN_INFO "id=%u, sda=%u, scl=%u, udelay=%u, timeout=%u, sda_od=%u, scl_od=%u, scl_oo=%u\n", 
@@ -83,7 +85,7 @@ static ssize_t add_bus_store(struct class *class,
            pdata.scl_is_open_drain, pdata.scl_is_output_only);
 
     ret=addbus(id, pdata, 1);
-    if(ret) {
+    if (ret) {
        return ret;
     }
 
@@ -96,15 +98,15 @@ static ssize_t remove_bus_store(struct class *class,
 {
     unsigned int id,i;
 
-    if(sscanf(buf, "%u", &id)<1) {
+    if (sscanf(buf, "%u", &id)<1) {
         printk(KERN_INFO MODNAME " remove_bus: Missing parameter.\n");
         return -EINVAL;
     }
 
-    for(i=0; i<n_busses; i++) {
-        if(busses[i].id==id) {
+    for (i=0; i<n_busses; i++) {
+        if (busses[i].id==id) {
             removebus(i);
-            if(i+1<n_busses)
+            if (i+1<n_busses)
                 busses[i]=busses[n_busses-1];
 
             n_busses--;
@@ -131,6 +133,7 @@ static struct class i2c_gpio_param_class = {
 
 static void removebus(unsigned int i) {
     platform_device_unregister(busses[i].pdev);
+    printk(KERN_INFO MODNAME " removebus()\n");
 }
 
 static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata, int test)
@@ -139,17 +142,20 @@ static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata, int test
     unsigned int i;
     struct platform_device *pdev;
 
-    if(n_busses>=MAX_BUSSES) {
+    printk(KERN_INFO MODNAME " addbus()\n");
+
+
+    if (n_busses>=MAX_BUSSES) {
         return -ENOMEM;
     }
 
-    for(i=0; i<n_busses; i++) {
+    for (i=0; i<n_busses; i++) {
         if(busses[i].id==id)
             return -EEXIST;
     }
 
-    for(i=0; i<sizeof(pin_blacklist)/sizeof(int); i++) {
-        if (pdata.sda_pin==pin_blacklist[i] || 
+    for (i=0; i<sizeof(pin_blacklist)/sizeof(int); i++) {
+        if (pdata.sda_pin==pin_blacklist[i] ||
             pdata.scl_pin==pin_blacklist[i]) {
             printk(KERN_ERR MODNAME ": Requested pin (%d) is blacklisted.\n",
                    pin_blacklist[i]);
@@ -163,13 +169,13 @@ static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata, int test
     }
 
     ret = platform_device_add_data(pdev, &pdata, sizeof(pdata));
-    if(ret) {
+    if (ret) {
         platform_device_put(pdev);
         return ret;
     }
 
     ret = platform_device_add(pdev);
-    if(ret) {
+    if (ret) {
         return ret;
     }
     // platform_device_add won't return error code if GPIO resources are not available,
@@ -178,7 +184,7 @@ static int addbus(unsigned int id, struct i2c_gpio_platform_data pdata, int test
     // Unfortunately this won't work when adding bus from init code as the actual
     // probe will run only after we finish are initialization.
 
-    if(test && platform_get_drvdata(pdev)==NULL) {
+    if (test && platform_get_drvdata(pdev)==NULL) {
         printk(KERN_ERR MODNAME ": Got error when registering the bus.\n");
         platform_device_unregister(pdev);
         return -EEXIST;
@@ -194,6 +200,8 @@ static int __init i2c_gpio_param_init(void)
     struct i2c_gpio_platform_data pdata;
     int ret;
 
+    printk(KERN_INFO MODNAME " Driver init\n");
+
     pdata.sda_pin = sda;
     pdata.scl_pin = scl;
     pdata.udelay = udelay;
@@ -203,7 +211,7 @@ static int __init i2c_gpio_param_init(void)
     pdata.scl_is_output_only = scl_oo;
 
     ret=addbus(busid, pdata, 0);
-    if(ret) {
+    if (ret) {
         return ret;
     }
 
@@ -211,16 +219,16 @@ static int __init i2c_gpio_param_init(void)
     if (ret < 0)
         return ret;
 
-
     return 0;
 }
 
 static void __exit i2c_gpio_param_exit(void)
 {
     int i;
+    printk(KERN_INFO MODNAME " Driver exit\n");
 
     class_unregister(&i2c_gpio_param_class);
-    for(i=0; i<n_busses; i++) {
+    for (i=0; i<n_busses; i++) {
         removebus(i);
     }
 }
