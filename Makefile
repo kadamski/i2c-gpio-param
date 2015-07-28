@@ -1,5 +1,5 @@
 obj-m := i2c-gpio-param.o
-KDIR := /home/k/BUILD/RPI/linux/
+KDIR ?= /lib/modules/`uname -r`/build
 PWD := $(shell pwd)
 
 all:
